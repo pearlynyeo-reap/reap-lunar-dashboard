@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reap Global — Social Intelligence Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-bottom: 1px solid #2d3748; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .header-left p { font-size: 12px; color: #718096; margin-top: 4px; }
+  .header-right { display: flex; gap: 12px; align-items: center; }
+  .badge { background: #1a1a2e; border: 1px solid #2d4a7a; color: #63b3ed; font-size: 11px; padding: 4px 10px; border-radius: 20px; }
+  .badge.live { border-color: #276749; color: #68d391; }
+  .badge.live::before { content: '● '; }
+
+  /* Layout */
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .full-width { margin-bottom: 20px; }
+
+  /* Cards */
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title span { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .card-title span.blue { background: #4299e1; }
+  .card-title span.green { background: #68d391; }
+  .card-title span.orange { background: #f6ad55; }
+  .card-title span.red { background: #fc8181; }
+  .card-title span.purple { background: #b794f4; }
+
+  /* Stat cards */
+  .stat-card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; }
+  .stat-label { font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: #fff; line-height: 1; }
+  .stat-value.red { color: #fc8181; }
+  .stat-value.green { color: #68d391; }
+  .stat-value.yellow { color: #f6e05e; }
+  .stat-sub { font-size: 12px; color: #4a5568; margin-top: 6px; }
+
+  /* Alert banner */
+  .alert { background: #1a1a2e; border: 1px solid #2d4a7a; border-left: 3px solid #4299e1; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #90cdf4; }
+  .alert strong { color: #fff; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 10px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 12px; border-bottom: 1px solid #1f2937; }
+  td { padding: 10px 12px; border-bottom: 1px solid #161b27; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #161b27; }
+  .handle { color: #63b3ed; font-size: 12px; }
+  .followers { color: #a0aec0; }
+  .interactions-high { color: #68d391; font-weight: 600; }
+  .interactions-mid { color: #f6ad55; font-weight: 600; }
+  .interactions-low { color: #718096; }
+  .not-indexed { color: #4a5568; font-style: italic; font-size: 11px; }
+
+  /* Status pills */
+  .pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .pill.active { background: #1c4532; color: #68d391; }
+  .pill.none { background: #1a1a1a; color: #4a5568; }
+  .pill.reap { background: #2d1b4e; color: #b794f4; }
+  .pill.up { background: #1c4532; color: #68d391; }
+  .pill.down { background: #2d1515; color: #fc8181; }
+
+  /* Rank bar */
+  .rank-bar { display: flex; align-items: center; gap: 8px; }
+  .rank-fill { height: 4px; border-radius: 2px; background: #4299e1; }
+
+  /* Sentiment bar */
+  .sentiment-wrap { display: flex; align-items: center; gap: 8px; }
+  .sentiment-bar-bg { flex: 1; height: 4px; background: #1f2937; border-radius: 2px; max-width: 80px; }
+  .sentiment-bar-fill { height: 4px; border-radius: 2px; }
+
+  /* Topic pills */
+  .topic-tag { display: inline-block; background: #1a1a2e; border: 1px solid #2d3748; color: #90cdf4; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin: 2px; }
+  .topic-tag.hot { border-color: #744210; color: #f6ad55; background: #1a1200; }
+  .topic-tag.core { border-color: #276749; color: #68d391; background: #0a1a12; }
+
+  /* Post feed */
+  .post-item { padding: 12px 0; border-bottom: 1px solid #1a1a2e; }
+  .post-item:last-child { border-bottom: none; }
+  .post-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .post-handle { color: #63b3ed; font-size: 12px; font-weight: 600; }
+  .post-followers { color: #4a5568; font-size: 11px; }
+  .post-text { font-size: 12px; color: #a0aec0; line-height: 1.5; }
+  .post-interactions { color: #68d391; font-size: 11px; font-weight: 600; margin-top: 4px; }
+
+  /* Competitor content */
+  .content-item { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #1a1a2e; }
+  .content-item:last-child { border-bottom: none; margin-bottom: 0; }
+  .content-brand { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .content-brand span { color: #4a5568; font-weight: 400; font-size: 11px; margin-left: 6px; }
+  .content-quote { font-size: 12px; color: #718096; font-style: italic; line-height: 1.5; margin-bottom: 6px; border-left: 2px solid #2d3748; padding-left: 10px; }
+  .content-strategy { font-size: 11px; color: #4299e1; }
+
+  /* Gap analysis */
+  .gap-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #1a1a2e; }
+  .gap-item:last-child { border-bottom: none; }
+  .gap-priority { font-size: 11px; font-weight: 700; color: #f6e05e; min-width: 20px; }
+  .gap-topic { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+  .gap-desc { font-size: 11px; color: #718096; }
+
+  /* Influencer cards */
+  .influencer-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #1a1a2e; }
+  .influencer-item:last-child { border-bottom: none; }
+  .influencer-handle { color: #63b3ed; font-size: 12px; font-weight: 600; }
+  .influencer-followers { color: #4a5568; font-size: 11px; }
+  .influencer-interactions { color: #68d391; font-size: 12px; font-weight: 600; }
+
+  /* Section headers */
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 8px; }
+  .section-num { width: 24px; height: 24px; background: #1a1a2e; border: 1px solid #2d3748; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #718096; font-weight: 600; }
+  .section-title { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+
+  /* Charts */
+  .chart-wrap { position: relative; height: 180px; }
+  .chart-wrap-sm { position: relative; height: 140px; }
+
+  /* Network tags */
+  .network-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .network-tag { font-size: 10px; background: #1a1a2e; border: 1px solid #2d3748; color: #a0aec0; padding: 2px 7px; border-radius: 8px; }
+  .network-tag.highlight { border-color: #2d4a7a; color: #63b3ed; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 24px; color: #2d3748; font-size: 11px; border-top: 1px solid #1a1a2e; margin-top: 20px; }
+
+  /* Scrollable table */
+  .table-scroll { overflow-x: auto; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .container { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Reap Global — Social Intelligence Dashboard</h1>
+    <p>Competitor tracking · Topic monitoring · Content intelligence · Gap analysis</p>
+  </div>
+  <div class="header-right">
+    <span class="badge live">Live Data</span>
+    <span class="badge">LunarCrush API</span>
+    <span class="badge">June 15, 2026</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Alert -->
+  <div class="alert">
+    <strong>Reap is currently invisible on LunarCrush.</strong> Zero social indexing, no creator profile, no topic rank. All 8 active competitors are indexed. This dashboard tracks the gap and shows exactly where to close it.
+  </div>
+
+  <!-- KPI Row -->
+  <div class="grid-4">
+    <div class="stat-card">
+      <div class="stat-label">Reap Social Rank</div>
+      <div class="stat-value red">None</div>
+      <div class="stat-sub">Not indexed on LunarCrush</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Closest Competitor</div>
+      <div class="stat-value yellow">BVNK</div>
+      <div class="stat-sub">4,845 followers · @BVNKFinance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Category Leader (Engagement)</div>
+      <div class="stat-value green">Airwallex</div>
+      <div class="stat-sub">20,101 interactions / 24h</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Stablecoin Topic Volume</div>
+      <div class="stat-value">5.6M</div>
+      <div class="stat-sub">interactions / 24h · 90% bullish</div>
+    </div>
+  </div>
+
+  <!-- Competitor Table + Chart -->
+  <div class="grid-2">
+    <div class="card" style="grid-column: span 2;">
+      <div class="card-title"><span class="blue"></span> Competitor Leaderboard — Live Social Data</div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Brand</th>
+              <th>Handle</th>
+              <th>Followers</th>
+              <th>24h Interactions</th>
+              <th>Top Topics</th>
+              <th>Key Network</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:#4a5568">1</td>
+              <td style="font-weight:600;color:#fff">Airwallex</td>
+              <td class="handle">@airwallex</td>
+              <td class="followers">15,273</td>
+              <td><span class="interactions-high">20,101</span></td>
+              <td><span class="topic-tag">business</span><span class="topic-tag">fintech</span><span class="topic-tag">ai</span></td>
+              <td><span class="network-tag highlight">McLaren F1</span><span class="network-tag highlight">Arsenal</span><span class="network-tag">Google</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">2</td>
+              <td style="font-weight:600;color:#fff">Rain</td>
+              <td class="handle">@raincards</td>
+              <td class="followers">17,121</td>
+              <td><span class="interactions-high">5,616</span></td>
+              <td><span class="topic-tag core">stablecoins #36</span><span class="topic-tag">onchain</span></td>
+              <td><span class="network-tag highlight">Visa</span><span class="network-tag highlight">Mastercard</span><span class="network-tag">Lightspeed</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">3</td>
+              <td style="font-weight:600;color:#fff">Slash</td>
+              <td class="handle">@slashapp</td>
+              <td class="followers">29,071</td>
+              <td><span class="interactions-high">2,164</span></td>
+              <td><span class="topic-tag">fintech</span><span class="topic-tag">fdic</span></td>
+              <td><span class="network-tag highlight">YCombinator</span><span class="network-tag">Base</span><span class="network-tag">Aave</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">4</td>
+              <td style="font-weight:600;color:#fff">Ramp</td>
+              <td class="handle">@tryramp</td>
+              <td class="followers">37,472</td>
+              <td><span class="interactions-mid">1,115</span></td>
+              <td><span class="topic-tag">finance</span><span class="topic-tag">ai</span><span class="topic-tag">accounting</span></td>
+              <td><span class="network-tag highlight">OpenAI</span><span class="network-tag highlight">Stripe</span><span class="network-tag">Anthropic</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">5</td>
+              <td style="font-weight:600;color:#fff">StraitsX</td>
+              <td class="handle">@StraitsX</td>
+              <td class="followers">7,240</td>
+              <td><span class="interactions-mid">233</span></td>
+              <td><span class="topic-tag core">xsgd</span><span class="topic-tag">singapore</span></td>
+              <td><span class="network-tag highlight">Grab</span><span class="network-tag">Coinbase</span><span class="network-tag">Ripple</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">6</td>
+              <td style="font-weight:600;color:#fff">Bridge</td>
+              <td class="handle">@Stablecoin</td>
+              <td class="followers">21,590</td>
+              <td><span class="interactions-low">77</span></td>
+              <td><span class="topic-tag core">stablecoins</span><span class="topic-tag">stripe</span></td>
+              <td><span class="network-tag highlight">Stripe</span><span class="network-tag">Visa</span><span class="network-tag">Solana</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">7</td>
+              <td style="font-weight:600;color:#fff">Nium</td>
+              <td class="handle">@NiumGlobal</td>
+              <td class="followers">7,949</td>
+              <td><span class="interactions-low">48</span></td>
+              <td><span class="topic-tag">fintech</span><span class="topic-tag core">stablecoins</span></td>
+              <td><span class="network-tag highlight">Circle</span><span class="network-tag">Visa</span><span class="network-tag">Coinbase</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr>
+              <td style="color:#4a5568">8</td>
+              <td style="font-weight:600;color:#fff">BVNK</td>
+              <td class="handle">@BVNKFinance</td>
+              <td class="followers">4,845</td>
+              <td><span class="interactions-low">17</span></td>
+              <td><span class="topic-tag core">stablecoins</span><span class="topic-tag">fiat</span></td>
+              <td><span class="network-tag highlight">Visa</span><span class="network-tag highlight">Mastercard</span><span class="network-tag">Circle</span></td>
+              <td><span class="pill active">Active</span></td>
+            </tr>
+            <tr style="opacity:0.4">
+              <td style="color:#4a5568">—</td>
+              <td style="font-weight:600;color:#fff">Pomelo</td>
+              <td class="handle">@pomelo_latam</td>
+              <td class="not-indexed">—</td>
+              <td class="not-indexed">—</td>
+              <td class="not-indexed">LatAm fintech</td>
+              <td>—</td>
+              <td><span class="pill none">Not indexed</span></td>
+            </tr>
+            <tr style="opacity:0.4">
+              <td style="color:#4a5568">—</td>
+              <td style="font-weight:600;color:#fff">Jeeves</td>
+              <td class="handle">@jeeves_inc</td>
+              <td class="not-indexed">—</td>
+              <td class="not-indexed">—</td>
+              <td class="not-indexed">Global corp cards</td>
+              <td>—</td>
+              <td><span class="pill none">Not indexed</span></td>
+            </tr>
+            <tr style="background:#0f0a1a">
+              <td style="color:#4a5568">—</td>
+              <td style="font-weight:700;color:#b794f4">Reap</td>
+              <td class="handle" style="color:#b794f4">@reapglobal</td>
+              <td class="not-indexed">Not indexed</td>
+              <td class="not-indexed">—</td>
+              <td class="not-indexed">stablecoins, card issuing</td>
+              <td>—</td>
+              <td><span class="pill reap">Not indexed</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engagement Chart + Topic Universe -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="green"></span> 24h Engagement — Active Competitors</div>
+      <div class="chart-wrap">
+        <canvas id="engagementChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="orange"></span> Topic Universe — 24h Interactions</div>
+      <div class="chart-wrap">
+        <canvas id="topicChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topic Volumes Table -->
+  <div class="card full-width">
+    <div class="card-title"><span class="blue"></span> Social Topic Volumes — All Platforms</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>24h Interactions</th>
+            <th>Sentiment</th>
+            <th>Twitter/X</th>
+            <th>TikTok</th>
+            <th>YouTube</th>
+            <th>Reddit</th>
+            <th>News</th>
+            <th>Trend</th>
+            <th>Reap Relevance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;color:#fff">USDT</td>
+            <td class="interactions-high">20,675,842</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:87%;background:#68d391"></div></div>87%</div>
+            </td>
+            <td>19,167,040</td><td>465,821</td><td>1,025,354</td><td>5,516</td><td>762</td>
+            <td><span class="pill up">Up</span></td>
+            <td><span class="topic-tag core">Direct</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">USDC</td>
+            <td class="interactions-high">7,469,104</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:92%;background:#68d391"></div></div>92%</div>
+            </td>
+            <td>5,272,047</td><td>1,893,263</td><td>179,756</td><td>469</td><td>5,897</td>
+            <td><span class="pill down">Down</span></td>
+            <td><span class="topic-tag core">Direct</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">Stablecoin</td>
+            <td class="interactions-high">8,751,082</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:89%;background:#68d391"></div></div>89%</div>
+            </td>
+            <td>6,527,472</td><td>1,895,587</td><td>203,940</td><td>514</td><td>5,897</td>
+            <td><span class="pill down">Down</span></td>
+            <td><span class="topic-tag core">Core</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">Stablecoins</td>
+            <td class="interactions-mid">5,640,570</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:90%;background:#68d391"></div></div>90%</div>
+            </td>
+            <td>5,398,170</td><td>37,502</td><td>136,140</td><td>3,719</td><td>62,889</td>
+            <td><span class="pill down">Down</span></td>
+            <td><span class="topic-tag core">Core</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">RWA</td>
+            <td class="interactions-mid">5,460,882</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:92%;background:#68d391"></div></div>92%</div>
+            </td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td>
+            <td><span class="topic-tag hot">Strategic</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">Fintech</td>
+            <td class="interactions-mid">3,471,560</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:86%;background:#68d391"></div></div>86%</div>
+            </td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td>
+            <td><span class="topic-tag core">Core</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">Tokenization</td>
+            <td class="interactions-mid">1,407,606</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:87%;background:#68d391"></div></div>87%</div>
+            </td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td>
+            <td><span class="topic-tag hot">Strategic</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">RLUSD</td>
+            <td class="interactions-low">143,901</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:95%;background:#68d391"></div></div>95%</div>
+            </td>
+            <td>88,872</td><td>4,961</td><td>49,933</td><td>44</td><td>82</td>
+            <td><span class="pill up">Up</span></td>
+            <td><span class="topic-tag">Watch</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;color:#fff">PYUSD</td>
+            <td class="interactions-low">21,790</td>
+            <td>
+              <div class="sentiment-wrap"><div class="sentiment-bar-bg"><div class="sentiment-bar-fill" style="width:87%;background:#68d391"></div></div>87%</div>
+            </td>
+            <td>21,525</td><td>82</td><td>47</td><td>132</td><td>3</td>
+            <td><span class="pill down">Down</span></td>
+            <td><span class="topic-tag">Low priority</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:#4a5568">⚠ News sentiment on stablecoins is only 36% — regulatory coverage is negative while social community sentiment sits at 87–99%. Two different narratives running simultaneously.</div>
+  </div>
+
+  <!-- Competitor Content + Live Feed -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="purple"></span> Competitor Content Strategy — What They're Posting</div>
+      <div class="content-item">
+        <div class="content-brand">Rain <span>@raincards · 5,616 interactions/day</span></div>
+        <div class="content-quote">"Giving AI agents real credit card numbers is a major problem. Single-use virtual cards are a safer alternative — just one of several ways Rain powers agentic payments today."</div>
+        <div class="content-strategy">→ Agentic AI + virtual cards narrative · Senate briefings on Clarity Act · Money20/20 Europe</div>
+      </div>
+      <div class="content-item">
+        <div class="content-brand">Slash <span>@slashapp · 2,164 interactions/day</span></div>
+        <div class="content-quote">"Slash Global Cards are quickly becoming one of the highest volume crypto card products on the market."</div>
+        <div class="content-strategy">→ Volume/traction claims · Crypto-to-card narrative · YC + Web3 community activation</div>
+      </div>
+      <div class="content-item">
+        <div class="content-brand">Airwallex <span>@airwallex · 20,101 interactions/day</span></div>
+        <div class="content-quote">"Speed matters – but not at the expense of control." — Executive podcast content + AI future of work positioning.</div>
+        <div class="content-strategy">→ Sports sponsorship (McLaren F1, Arsenal) drives mass reach · CEO thought leadership · Not product posts</div>
+      </div>
+      <div class="content-item">
+        <div class="content-brand">Bridge <span>@Stablecoin · 77 interactions/day</span></div>
+        <div class="content-quote">"Chipper Cash is partnering with Bridge on the Chipper USD Card — a more reliable way for customers to access dollars."</div>
+        <div class="content-strategy">→ Partnership announcements · LatAm + Africa use cases · Dollar access narrative (Deel, Colombia, Argentina)</div>
+      </div>
+      <div class="content-item">
+        <div class="content-brand">StraitsX <span>@StraitsX · 233 interactions/day</span></div>
+        <div class="content-quote">"Asia is leading the shift from stablecoin speculation to real-world utility, accounting for ~60% of the $390 billion..."</div>
+        <div class="content-strategy">→ Asia data-led posts · Regulated infrastructure co-posts with OKX · Monthly newsletter</div>
+      </div>
+      <div class="content-item" style="border:none">
+        <div class="content-brand">BVNK <span>@BVNKFinance · 17 interactions/day</span></div>
+        <div class="content-quote">"Meet Sean, Head of Solutions - Americas. He takes stablecoins from whiteboard to production."</div>
+        <div class="content-strategy">→ Team humanisation · Conference presence (Money20/20) · Stablecoin infrastructure education</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="green"></span> Live Stablecoin Conversation Feed — Right Now</div>
+      <div class="post-item">
+        <div class="post-meta"><span class="post-handle">@scottmelker</span><span class="post-followers">1,085,567 followers</span></div>
+        <div class="post-text">"The DTCC model, with all due respect, is just about preserving the existing market structure" — Securitize founder on RWA tokenization</div>
+        <div class="post-interactions">36,114 interactions</div>
+      </div>
+      <div class="post-item">
+        <div class="post-meta"><span class="post-handle">@ETH_Daily</span><span class="post-followers">102,936 followers</span></div>
+        <div class="post-text">Vitalik recently shared a new idea for building stablecoins on Ethereum natively — deposit ETH, borrow dollars against it</div>
+        <div class="post-interactions">28,103 interactions</div>
+      </div>
+      <div class="post-item">
+        <div class="post-meta"><span class="post-handle">@BitcoinNews</span><span class="post-followers">3,272,150 followers</span></div>
+        <div class="post-text">"Stablecoins and agentic AI are the soul of Consensus this year" — Brad Spies, Managing Director</div>
+        <div class="post-interactions">9,274 interactions</div>
+      </div>
+      <div class="post-item">
+        <div class="post-meta"><span class="post-handle">@Crypto_TownHall</span><span class="post-followers">104,803 followers</span></div>
+        <div class="post-text">UFC will reportedly pay some White House fight bonuses in Trump-backed USD1 stablecoins</div>
+        <div class="post-interactions">7,903 interactions</div>
+      </div>
+      <div class="post-item">
+        <div class="post-meta"><span class="post-handle">@ChartNerdTA</span><span class="post-followers">34,244 followers</span></div>
+        <div class="post-text">MoneyGram 🤝 Stellar — stablecoin-powered cross-border payments partnership</div>
+        <div class="post-interactions">5,598 interactions</div>
+      </div>
+      <div class="post-item" style="border:none">
+        <div class="post-meta"><span class="post-handle">@seo_sangmin</span><span class="post-followers">4,181 followers</span></div>
+        <div class="post-text">Rapid growth of JPYC on Kaia Chain — regional stablecoins gaining traction. Market demands scalable infrastructure.</div>
+        <div class="post-interactions">4,032 interactions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Influencers -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title"><span class="blue"></span> Top Influencers — Stablecoins</div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@SuiNetwork</div><div class="influencer-followers">1,102,641 followers</div></div>
+        <div class="influencer-interactions">3,011,843</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@yodlpay</div><div class="influencer-followers">2,510 followers</div></div>
+        <div class="influencer-interactions">519,029</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@scottmelker</div><div class="influencer-followers">1,086,569 followers</div></div>
+        <div class="influencer-interactions">151,587</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@lewiswjackson</div><div class="influencer-followers">225,000 followers</div></div>
+        <div class="influencer-interactions">27,613</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@WuBlockchain</div><div class="influencer-followers">556,890 followers</div></div>
+        <div class="influencer-interactions">23,261</div>
+      </div>
+      <div class="influencer-item" style="border:none">
+        <div><div class="influencer-handle">@injective</div><div class="influencer-followers">544,260 followers</div></div>
+        <div class="influencer-interactions">19,469</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="orange"></span> Top Influencers — Fintech</div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@adcbuae</div><div class="influencer-followers">22,900 followers · UAE</div></div>
+        <div class="influencer-interactions">375,331</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@airwallex</div><div class="influencer-followers">8,760 followers</div></div>
+        <div class="influencer-interactions">184,863</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@fintechneeraj</div><div class="influencer-followers">404,000 followers</div></div>
+        <div class="influencer-interactions">118,174</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@momofrommtngh</div><div class="influencer-followers">83,200 followers</div></div>
+        <div class="influencer-interactions">74,372</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@heyfintechfounder</div><div class="influencer-followers">719,616 followers</div></div>
+        <div class="influencer-interactions">38,378</div>
+      </div>
+      <div class="influencer-item" style="border:none">
+        <div><div class="influencer-handle">@businessbelarabi</div><div class="influencer-followers">269,000 followers</div></div>
+        <div class="influencer-interactions">34,428</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="purple"></span> Top Influencers — Tokenization / RWA</div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@scottmelker</div><div class="influencer-followers">1,086,569 followers</div></div>
+        <div class="influencer-interactions">150,042</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@OndoFinance</div><div class="influencer-followers">374,391 followers</div></div>
+        <div class="influencer-interactions">83,761</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@BankXRP</div><div class="influencer-followers">276,425 followers</div></div>
+        <div class="influencer-interactions">45,565</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@bitinning</div><div class="influencer-followers">211,000 followers</div></div>
+        <div class="influencer-interactions">42,013</div>
+      </div>
+      <div class="influencer-item">
+        <div><div class="influencer-handle">@jakeclaver</div><div class="influencer-followers">200,000 followers</div></div>
+        <div class="influencer-interactions">33,818</div>
+      </div>
+      <div class="influencer-item" style="border:none">
+        <div><div class="influencer-handle">@totofinance</div><div class="influencer-followers">15,636 followers</div></div>
+        <div class="influencer-interactions">31,532</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gap Analysis -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="red"></span> Where Reap Closes the Gap — Priority Actions</div>
+      <div class="gap-item">
+        <div class="gap-priority">1</div>
+        <div><div class="gap-topic">Post consistently to get indexed</div><div class="gap-desc">LunarCrush indexes accounts once they hit volume threshold. Daily posting on @reapglobal is the fastest path to appearing in social intelligence tools investors and media use.</div></div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority">2</div>
+        <div><div class="gap-topic">Own the Asia B2B stablecoin narrative</div><div class="gap-desc">StraitsX is Singapore-only. No one owns pan-Asia stablecoin card infrastructure positioning. Reap's geographic footprint is the white space.</div></div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority">3</div>
+        <div><div class="gap-topic">Enter the agentic payments conversation</div><div class="gap-desc">Rain is starting here ("AI agents + virtual cards") but thin. This is Reap's product — own it before Rain does. High-volume narrative right now.</div></div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-priority">4</div>
+        <div><div class="gap-topic">Get a stablecoin topic rank</div><div class="gap-desc">Rain is ranked #36 globally for stablecoins. BVNK's #1 topic is stablecoins. Reap has zero rank. Consistent stablecoin content changes this.</div></div>
+      </div>
+      <div class="gap-item" style="border:none">
+        <div class="gap-priority">5</div>
+        <div><div class="gap-topic">Activate ecosystem partnerships socially</div><div class="gap-desc">Visa, Mastercard, Circle appear across competitor social graphs. Co-posts with network partners (tag them, reference them) builds community connections LunarCrush tracks.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="green"></span> Topics to Post Into — Ranked by Volume + Relevance</div>
+      <table>
+        <thead>
+          <tr><th>Priority</th><th>Topic / Hashtag</th><th>24h Interactions</th><th>Sentiment</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">1</span></td>
+            <td><span class="topic-tag core">#stablecoins</span></td>
+            <td>5,640,570</td>
+            <td style="color:#68d391">90%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">2</span></td>
+            <td><span class="topic-tag core">#fintech</span></td>
+            <td>3,471,560</td>
+            <td style="color:#68d391">86%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">3</span></td>
+            <td><span class="topic-tag hot">#rwa</span></td>
+            <td>5,460,882</td>
+            <td style="color:#68d391">92%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">4</span></td>
+            <td><span class="topic-tag core">#usdc</span></td>
+            <td>7,469,104</td>
+            <td style="color:#68d391">92%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">5</span></td>
+            <td><span class="topic-tag">#web3</span></td>
+            <td>8,501,483</td>
+            <td style="color:#68d391">84%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#f6e05e;font-weight:700">6</span></td>
+            <td><span class="topic-tag hot">#tokenization</span></td>
+            <td>1,407,606</td>
+            <td style="color:#68d391">87%</td>
+          </tr>
+          <tr>
+            <td><span style="color:#718096">7</span></td>
+            <td><span class="topic-tag">#defi</span></td>
+            <td>13,212,568</td>
+            <td style="color:#f6ad55">77%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:10px"><span class="blue"></span> Influencers to Engage First</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span class="topic-tag core">@scottmelker — 1M+ RWA+stablecoins</span>
+          <span class="topic-tag core">@WuBlockchain — Asia crypto news</span>
+          <span class="topic-tag hot">@adcbuae — UAE fintech</span>
+          <span class="topic-tag hot">@OndoFinance — RWA protocol</span>
+          <span class="topic-tag">@fintechneeraj — 404K fintech</span>
+          <span class="topic-tag">@yodlpay — crypto payments viral</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conference Signal -->
+  <div class="card full-width">
+    <div class="card-title"><span class="orange"></span> Conference Signal — Where Competitors Are Right Now</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding:8px 0">
+      <div style="text-align:center;padding:16px 24px;background:#1a1200;border:1px solid #744210;border-radius:10px">
+        <div style="font-size:16px;font-weight:700;color:#f6ad55">Money20/20 Europe</div>
+        <div style="font-size:12px;color:#718096;margin-top:4px">Amsterdam · Active now</div>
+        <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <span class="pill active">BVNK</span>
+          <span class="pill active">Nium</span>
+          <span class="pill active">Rain</span>
+          <span class="pill active">Bridge</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:12px;color:#718096;line-height:1.8">
+          4 of 8 competitors are posting live from <strong style="color:#f6ad55">Money20/20 Europe</strong> this week. This is the single highest-signal conference across all competitor social graphs. Even without physical presence, Reap can participate in the conversation by engaging with <strong style="color:#fff">#Money2020</strong> posts and the speakers, partners, and announcements coming out of the event.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Reap Global Social Intelligence Dashboard · Data: LunarCrush Builder API · Refreshed June 15, 2026 · ~/Desktop/lunar/
+</div>
+
+<script>
+  // Engagement Chart
+  const engCtx = document.getElementById('engagementChart').getContext('2d');
+  new Chart(engCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Airwallex', 'Rain', 'Slash', 'Ramp', 'StraitsX', 'Bridge', 'Nium', 'BVNK'],
+      datasets: [{
+        data: [20101, 5616, 2164, 1115, 233, 77, 48, 17],
+        backgroundColor: ['#4299e1','#68d391','#68d391','#f6ad55','#f6ad55','#718096','#718096','#718096'],
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1f2937' }, ticks: { color: '#718096', font: { size: 10 } } },
+        y: { grid: { color: '#1f2937' }, ticks: { color: '#718096', font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Topic Chart
+  const topicCtx = document.getElementById('topicChart').getContext('2d');
+  new Chart(topicCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['USDT', 'USDC', 'Stablecoin', 'RWA', 'Stablecoins', 'Fintech', 'Tokenization'],
+      datasets: [{
+        data: [20675842, 7469104, 8751082, 5460882, 5640570, 3471560, 1407606],
+        backgroundColor: ['#4299e1','#68d391','#b794f4','#f6ad55','#63b3ed','#fc8181','#76e4f7'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#718096', font: { size: 10 }, boxWidth: 10, padding: 8 } }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
