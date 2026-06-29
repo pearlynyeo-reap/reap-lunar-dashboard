@@ -1,0 +1,26 @@
+{
+  "date": "June 29, 2026",
+  "iso_date": "2026-06-29",
+  "competitors": [
+    {"handle": "slashapp",    "name": "Slash",     "followers": 29322, "interactions_24h": 2068},
+    {"handle": "airwallex",   "name": "Airwallex", "followers": 16006, "interactions_24h": 919},
+    {"handle": "raincards",   "name": "Rain",      "followers": 17365, "interactions_24h": 698},
+    {"handle": "tryramp",     "name": "Ramp",      "followers": 37880, "interactions_24h": 256},
+    {"handle": "Stablecoin",  "name": "Bridge",    "followers": 21646, "interactions_24h": 114},
+    {"handle": "BVNKFinance", "name": "BVNK",      "followers": 4848,  "interactions_24h": 25},
+    {"handle": "StraitsX",    "name": "StraitsX",  "followers": 7242,  "interactions_24h": 10},
+    {"handle": "NiumGlobal",  "name": "Nium",      "followers": 7957,  "interactions_24h": 2}
+  ],
+  "topics": [
+    {"topic": "usdt",         "label": "USDT",         "interactions_24h": 48451526, "sentiment": 87, "trend": "up"},
+    {"topic": "defi",         "label": "DeFi",          "interactions_24h": 21774952, "sentiment": 87, "trend": "flat"},
+    {"topic": "web3",         "label": "Web3",          "interactions_24h": 12037433, "sentiment": 89, "trend": "flat"},
+    {"topic": "rwa",          "label": "RWA",           "interactions_24h": 6990210,  "sentiment": 88, "trend": "down"},
+    {"topic": "usdc",         "label": "USDC",          "interactions_24h": 6132091,  "sentiment": 92, "trend": "down"},
+    {"topic": "fintech",      "label": "Fintech",       "interactions_24h": 5351706,  "sentiment": 88, "trend": "down"},
+    {"topic": "stablecoins",  "label": "Stablecoins",  "interactions_24h": 5221731,  "sentiment": 90, "trend": "flat"},
+    {"topic": "tokenization", "label": "Tokenization",  "interactions_24h": 1579448,  "sentiment": 93, "trend": "down"},
+    {"topic": "pyusd",        "label": "PYUSD",         "interactions_24h": 362319,   "sentiment": 87, "trend": "down"},
+    {"topic": "rlusd",        "label": "RLUSD",         "interactions_24h": 58602,    "sentiment": 92, "trend": "down"}
+  ]
+}

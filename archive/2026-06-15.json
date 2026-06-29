@@ -1,0 +1,27 @@
+{
+  "date": "June 15, 2026",
+  "iso_date": "2026-06-15",
+  "competitors": [
+    {"handle": "airwallex",   "name": "Airwallex", "followers": 15273, "interactions_24h": 20101},
+    {"handle": "raincards",   "name": "Rain",      "followers": 17121, "interactions_24h": 5616},
+    {"handle": "slashapp",    "name": "Slash",     "followers": 29071, "interactions_24h": 2164},
+    {"handle": "tryramp",     "name": "Ramp",      "followers": 37472, "interactions_24h": 1115},
+    {"handle": "StraitsX",    "name": "StraitsX",  "followers": 7240,  "interactions_24h": 233},
+    {"handle": "Stablecoin",  "name": "Bridge",    "followers": 21590, "interactions_24h": 77},
+    {"handle": "NiumGlobal",  "name": "Nium",      "followers": 7949,  "interactions_24h": 48},
+    {"handle": "BVNKFinance", "name": "BVNK",      "followers": 4845,  "interactions_24h": 17}
+  ],
+  "topics": [
+    {"topic": "usdt",         "label": "USDT",         "interactions_24h": 20675842, "sentiment": 87, "trend": "up"},
+    {"topic": "stablecoin",   "label": "Stablecoin",   "interactions_24h": 8751082,  "sentiment": 89, "trend": "down"},
+    {"topic": "web3",         "label": "Web3",          "interactions_24h": 8501483,  "sentiment": 84, "trend": "flat"},
+    {"topic": "usdc",         "label": "USDC",          "interactions_24h": 7469104,  "sentiment": 92, "trend": "down"},
+    {"topic": "rwa",          "label": "RWA",           "interactions_24h": 5460882,  "sentiment": 92, "trend": "flat"},
+    {"topic": "stablecoins",  "label": "Stablecoins",  "interactions_24h": 5640570,  "sentiment": 90, "trend": "down"},
+    {"topic": "fintech",      "label": "Fintech",       "interactions_24h": 3471560,  "sentiment": 86, "trend": "flat"},
+    {"topic": "defi",         "label": "DeFi",          "interactions_24h": 13212568, "sentiment": 77, "trend": "flat"},
+    {"topic": "tokenization", "label": "Tokenization",  "interactions_24h": 1407606,  "sentiment": 87, "trend": "flat"},
+    {"topic": "rlusd",        "label": "RLUSD",         "interactions_24h": 143901,   "sentiment": 95, "trend": "up"},
+    {"topic": "pyusd",        "label": "PYUSD",         "interactions_24h": 21790,    "sentiment": 87, "trend": "down"}
+  ]
+}
