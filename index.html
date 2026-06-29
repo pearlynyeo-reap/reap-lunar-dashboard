@@ -928,9 +928,11 @@
       const prev = prevCompMap[c.handle];
       return {
         ...c,
-        followerDelta: prev ? calcPct(c.followers, prev.followers) : null,
-        followerAbs:   prev ? c.followers - prev.followers : null,
-        intDelta:      prev ? calcPct(c.interactions_24h, prev.interactions_24h) : null,
+        prevInteractions: prev ? prev.interactions_24h : null,
+        prevFollowers:    prev ? prev.followers : null,
+        followerAbs:      prev ? c.followers - prev.followers : null,
+        intDelta:         prev ? calcPct(c.interactions_24h, prev.interactions_24h) : null,
+        followerDelta:    prev ? calcPct(c.followers, prev.followers) : null,
       };
     }).sort((a, b) => Math.abs(b.intDelta || 0) - Math.abs(a.intDelta || 0));
 
@@ -938,63 +940,62 @@
       const prev = prevTopicMap[t.topic];
       return {
         ...t,
-        delta: prev ? calcPct(t.interactions_24h, prev.interactions_24h) : null,
-        sentDelta: prev ? t.sentiment - prev.sentiment : null,
+        prevInteractions: prev ? prev.interactions_24h : null,
+        prevSentiment:    prev ? prev.sentiment : null,
+        delta:            prev ? calcPct(t.interactions_24h, prev.interactions_24h) : null,
+        sentDelta:        prev ? t.sentiment - prev.sentiment : null,
       };
     }).sort((a, b) => Math.abs(b.delta || 0) - Math.abs(a.delta || 0));
 
-    const rowStyle = 'border-bottom:1px solid #161b27';
-    const tdStyle = 'padding:7px 8px';
-    const thStyle = 'text-align:left;color:#4a5568;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;padding:6px 8px;border-bottom:1px solid #1f2937';
+    const rs = 'border-bottom:1px solid #161b27';
+    const td = 'padding:7px 8px';
+    const th = 'color:#4a5568;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;padding:6px 8px;border-bottom:1px solid #1f2937';
+    const thr = th + ';text-align:right';
 
-    const compTable = `
-      <div style="font-size:10px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Competitor Engagement</div>
-      <div class="table-scroll">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr>
-          <th style="${thStyle}">Competitor</th>
-          <th style="${thStyle};text-align:right">Now</th>
-          <th style="${thStyle};text-align:right">vs ${prevLabel}</th>
-          <th style="${thStyle};text-align:right">Followers</th>
-          <th style="${thStyle};text-align:right">Growth</th>
-        </tr></thead>
-        <tbody>
-          ${compRows.map(c => `<tr style="${rowStyle}">
-            <td style="${tdStyle};color:#fff;font-weight:600">${c.name}</td>
-            <td style="${tdStyle};text-align:right;color:#a0aec0">${c.interactions_24h.toLocaleString()}</td>
-            <td style="${tdStyle};text-align:right">${fmtPct(c.intDelta)}</td>
-            <td style="${tdStyle};text-align:right;color:#a0aec0">${c.followers.toLocaleString()}</td>
-            <td style="${tdStyle};text-align:right">${c.followerAbs !== null ? (c.followerAbs >= 0 ? '<span style="color:#68d391">+' : '<span style="color:#fc8181">') + c.followerAbs.toLocaleString() + '</span>' : '—'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-      </div>`;
+    const compTable = '<div style="font-size:10px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Competitor Engagement</div><div class="table-scroll"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + `<th style="${th}">Competitor</th>`
+      + `<th style="${thr}">${prevLabel}</th>`
+      + `<th style="${thr}">Now</th>`
+      + `<th style="${thr}">Δ</th>`
+      + `<th style="${thr}">${prevLabel} followers</th>`
+      + `<th style="${thr}">Now</th>`
+      + `<th style="${thr}">Growth</th>`
+      + '</tr></thead><tbody>'
+      + compRows.map(c => '<tr style="' + rs + '">'
+          + `<td style="${td};color:#fff;font-weight:600">${c.name}</td>`
+          + `<td style="${td};text-align:right;color:#718096">${c.prevInteractions !== null ? c.prevInteractions.toLocaleString() : '—'}</td>`
+          + `<td style="${td};text-align:right;color:#e2e8f0;font-weight:600">${c.interactions_24h.toLocaleString()}</td>`
+          + `<td style="${td};text-align:right">${fmtPct(c.intDelta)}</td>`
+          + `<td style="${td};text-align:right;color:#718096">${c.prevFollowers !== null ? c.prevFollowers.toLocaleString() : '—'}</td>`
+          + `<td style="${td};text-align:right;color:#e2e8f0">${c.followers.toLocaleString()}</td>`
+          + `<td style="${td};text-align:right">${c.followerAbs !== null ? (c.followerAbs >= 0 ? '<span style="color:#68d391">+' : '<span style="color:#fc8181">') + c.followerAbs.toLocaleString() + '</span>' : '—'}</td>`
+          + '</tr>').join('')
+      + '</tbody></table></div>';
 
-    const topicTable = `
-      <div style="font-size:10px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Topic Volumes</div>
-      <div class="table-scroll">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr>
-          <th style="${thStyle}">Topic</th>
-          <th style="${thStyle};text-align:right">Now</th>
-          <th style="${thStyle};text-align:right">vs ${prevLabel}</th>
-          <th style="${thStyle};text-align:right">Sentiment</th>
-          <th style="${thStyle};text-align:right">Sent. Δ</th>
-        </tr></thead>
-        <tbody>
-          ${topicRows.map(t => `<tr style="${rowStyle}">
-            <td style="${tdStyle};color:#fff;font-weight:600">${t.label}</td>
-            <td style="${tdStyle};text-align:right;color:#a0aec0">${fmtNum(t.interactions_24h)}</td>
-            <td style="${tdStyle};text-align:right">${fmtPct(t.delta)}</td>
-            <td style="${tdStyle};text-align:right;color:#68d391">${t.sentiment}%</td>
-            <td style="${tdStyle};text-align:right">${t.sentDelta !== null ? (t.sentDelta > 0 ? '<span style="color:#68d391">+' + t.sentDelta + 'pp</span>' : t.sentDelta < 0 ? '<span style="color:#fc8181">' + t.sentDelta + 'pp</span>' : '<span style="color:#a0aec0">—</span>') : '—'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-      </div>`;
+    const topicTable = '<div style="font-size:10px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Topic Volumes</div><div class="table-scroll"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + `<th style="${th}">Topic</th>`
+      + `<th style="${thr}">${prevLabel}</th>`
+      + `<th style="${thr}">Now</th>`
+      + `<th style="${thr}">Δ</th>`
+      + `<th style="${thr}">Sent. ${prevLabel}</th>`
+      + `<th style="${thr}">Sent. Now</th>`
+      + '</tr></thead><tbody>'
+      + topicRows.map(t => '<tr style="' + rs + '">'
+          + `<td style="${td};color:#fff;font-weight:600">${t.label}</td>`
+          + `<td style="${td};text-align:right;color:#718096">${t.prevInteractions !== null ? fmtNum(t.prevInteractions) : '—'}</td>`
+          + `<td style="${td};text-align:right;color:#e2e8f0;font-weight:600">${fmtNum(t.interactions_24h)}</td>`
+          + `<td style="${td};text-align:right">${fmtPct(t.delta)}</td>`
+          + `<td style="${td};text-align:right;color:#718096">${t.prevSentiment !== null ? t.prevSentiment + '%' : '—'}</td>`
+          + `<td style="${td};text-align:right;color:#68d391">${t.sentiment}%</td>`
+          + '</tr>').join('')
+      + '</tbody></table></div>';
 
+    // Wrap each table in an explicit <div> — prevents whitespace text nodes becoming grid items
     document.getElementById('changes-content').innerHTML =
-      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">${compTable}${topicTable}</div>`;
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">'
+      + '<div>' + compTable + '</div>'
+      + '<div>' + topicTable + '</div>'
+      + '</div>';
   }
 
   async function loadComparison(isoDate) {
